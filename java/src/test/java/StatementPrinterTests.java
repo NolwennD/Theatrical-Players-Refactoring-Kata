@@ -1,44 +1,74 @@
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.text.NumberFormat;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import static org.approvaltests.Approvals.verify;
 
 public class StatementPrinterTests {
+	
+	private StatementPrinter printer;
+
+	@BeforeEach
+	void init() {
+		printer = new StatementPrinter(NumberFormat.getCurrencyInstance(Locale.US));
+	}
 
     @Test
     void exampleStatement() {
-        Map<String, Play> plays = Map.of(
-                "hamlet",  new Play("Hamlet", "tragedy"),
-                "as-like", new Play("As You Like It", "comedy"),
-                "othello", new Play("Othello", "tragedy"));
+        Play hamlet = new Play("Hamlet", PlayType.TRAGEDY);
+		Play asYouLikeIt = new Play("As You Like It", PlayType.COMEDY);
+		Play othello = new Play("Othello", PlayType.TRAGEDY);
+		Map<String, Play> plays = Map.of(
+                "hamlet",  hamlet,
+                "as-like", asYouLikeIt,
+                "othello", othello);
 
         Invoice invoice = new Invoice("BigCo", List.of(
-                new Performance("hamlet", 55),
-                new Performance("as-like", 35),
-                new Performance("othello", 40)));
+                new Performance(hamlet, "hamlet", 55),
+                new Performance(asYouLikeIt, "as-like", 35),
+                new Performance(othello, "othello", 40)));
 
-        StatementPrinter statementPrinter = new StatementPrinter();
-        var result = statementPrinter.print(invoice, plays);
+        var result = printer.print(invoice, plays);
 
         verify(result);
     }
 
     @Test
     void statementWithNewPlayTypes() {
-        Map<String, Play> plays = Map.of(
-                "henry-v",  new Play("Henry V", "history"),
-                "as-like", new Play("As You Like It", "pastoral"));
+        Play henryV = new Play("Henry V", "history");
+		Play asYouLikeIt = new Play("As You Like It", "pastoral");
+		Map<String, Play> plays = Map.of(
+                "henry-v",  henryV,
+                "as-like", asYouLikeIt);
 
         Invoice invoice = new Invoice("BigCo", List.of(
-                new Performance("henry-v", 53),
-                new Performance("as-like", 55)));
+                new Performance(henryV, "henry-v", 53),
+                new Performance(asYouLikeIt, "as-like", 55)));
 
-        StatementPrinter statementPrinter = new StatementPrinter();
         Assertions.assertThrows(Error.class, () -> {
-            statementPrinter.print(invoice, plays);
+            printer.print(invoice, plays);
         });
+    }
+    
+    @Test
+    void statementWithNewPlayTypes1() {
+    	Play henry = new Play("Henry V", PlayType.TRAGEDY);
+		Play asYouLike = new Play("As You Like It", PlayType.COMEDY);
+		Map<String, Play> plays = Map.of(
+    			"henry-v",  henry,
+    			"as-like", asYouLike);
+    	
+    	Invoice invoice = new Invoice("BigCo", List.of(
+    			new Performance(henry, "henry-v", 20),
+    			new Performance(asYouLike, "as-like", 10)));
+    	
+    	var result = printer.print(invoice, plays);
+    	
+    	verify(result);
     }
 }
